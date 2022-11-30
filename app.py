@@ -9,6 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 # Dependencia sys para poder usar print
 import sys, json
@@ -32,16 +34,22 @@ def validateDriver():
 def get_status():
 	return jsonify(validateDriver())
 
-@app.route('/', methods=['GET']) # init
+@app.route('/init', methods=['GET']) # init
 def get_init():
-	global driver
-	global tabs
-	status = validateDriver();
-	if ( status['status'] is False ):
-		driver = webdriver.Chrome()
-		tabs = driver.window_handles
-		return jsonify({'status': True, 'message': 'Initialized'})
-	return jsonify({'status': True, 'message': 'Already Initiated'})
+    global driver
+    global tabs
+    status = validateDriver();
+    if ( status['status'] is False ):
+        chrome_options = webdriver.chromeOptions()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument("--single-process")
+        chrome_options.add_argumnet("--disable-dev-shm-usage")
+
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options)
+        tabs = driver.window_handles
+        return jsonify({'status': True, 'message': 'Initialized'})
+    return jsonify({'status': True, 'message': 'Already Initiated'})
 
 @app.route('/open', methods=['GET']) 
 def get_open():
@@ -115,3 +123,8 @@ def get_customer():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+	
+
+

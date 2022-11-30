@@ -34,41 +34,46 @@ def validateDriver():
 def get_status():
 	return jsonify(validateDriver())
 
-@app.route('/init', methods=['GET']) # init
+@app.route('/', methods=['GET']) # init
 def get_init():
-    global driver
-    global tabs
-    status = validateDriver();
-    if ( status['status'] is False ):
-        chrome_options = webdriver.chromeOptions()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument("--single-process")
-        chrome_options.add_argumnet("--disable-dev-shm-usage")
-
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options)
-        tabs = driver.window_handles
-        return jsonify({'status': True, 'message': 'Initialized'})
-    return jsonify({'status': True, 'message': 'Already Initiated'})
-
-@app.route('/open', methods=['GET']) 
-def get_open():
-	status = validateDriver()
-	site = '토레타.메인.한국' # toreta website
-	if ( status['status'] is True ):
-		driver.get('http://' + site)
-		return jsonify({'status': True})
-	return jsonify(status)
-
-@app.route('/close', methods=['GET']) # 작업 다 끝나면 자동으로 호출되도록 수정 예정
-def get_close():
 	global driver
-	status = validateDriver()
-	if ( status['status'] is True ):
-		driver.close();
-		driver = None;
-		return jsonify({'status': True})
-	return jsonify(status)
+	global tabs
+	status = validateDriver();
+	if ( status['status'] is False ):
+		chrome_options = webdriver.chromeOptions()
+		chrome_options.add_argument('--headless')
+		chrome_options.add_argument('--no-sandbox')
+		chrome_options.add_argument("--single-process")
+		chrome_options.add_argumnet("--disable-dev-shm-usage")
+
+		driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options)
+		tabs = driver.window_handles
+
+		# open toreta website
+		site = '토레타.메인.한국'
+		driver.get('http://' + site)
+
+		# crawling
+		cnt = 1 # page
+		res = []
+		try:
+			while True:
+				crawling(res)
+				cnt += 1
+				driver.find_element(By.XPATH, r'//*[@id="root"]/div/div/div[3]/div/div[2]/div/div[2]/button[2]').click()
+		finally:
+			print("end: ", cnt-1) # check page
+			with open('result.json', 'w') as f:
+				for person in res:
+					f.write(json.dumps(person, ensure_ascii=False) + '\n')
+			driver.close()
+			driver = None
+			return json.dumps(res, ensure_ascii=False)
+		
+	return jsonify({'status': True, 'message': 'Already Initiated'})
+
+
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -103,28 +108,7 @@ def crawling(res):
 			'age': age_list[i].text,
 			'visit': visit_list[i].text,
 			'phoneNumber': phoneNumber_list[i].text
-		}))
-
-@app.route('/get-customer', methods=['GET'])
-def get_customer():
-	cnt = 1 # page
-	res = [] # result / 호출될 때 마다 초기화 후 크롤링
-	try:
-		while True:
-			crawling(res)
-			cnt += 1
-			driver.find_element(By.XPATH, r'//*[@id="root"]/div/div/div[3]/div/div[2]/div/div[2]/button[2]').click()
-	finally:
-		print("end: ", cnt-1) # 총 넘긴 페이지 수 확인
-		with open('result.json', 'w') as f:
-			for person in res:
-				f.write(person + '\n')
-		return json.dumps(res, indent=4)
+		}, ensure_ascii=False))
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-
-	
-
-
+    app.run(host='0.0.0.0')

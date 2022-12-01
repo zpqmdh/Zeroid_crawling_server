@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 # Dependencia sys para poder usar print
-import sys, json
+import sys, json, ast
 
 
 app = Flask(__name__)
@@ -40,13 +40,13 @@ def get_init():
 	global tabs
 	status = validateDriver();
 	if ( status['status'] is False ):
-		chrome_options = webdriver.chromeOptions()
-		chrome_options.add_argument('--headless')
-		chrome_options.add_argument('--no-sandbox')
-		chrome_options.add_argument("--single-process")
-		chrome_options.add_argumnet("--disable-dev-shm-usage")
+		# chrome_options = webdriver.chromeOptions()
+		# chrome_options.add_argument('--headless')
+		# chrome_options.add_argument('--no-sandbox')
+		# chrome_options.add_argument("--single-process")
+		# chrome_options.add_argumnet("--disable-dev-shm-usage")
 
-		driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options)
+		driver = webdriver.Chrome(executable_path=r"chromedriver.exe")
 		tabs = driver.window_handles
 
 		# open toreta website
@@ -56,33 +56,24 @@ def get_init():
 		# crawling
 		cnt = 1 # page
 		res = []
+		j_res = []
 		try:
 			while True:
 				crawling(res)
 				cnt += 1
-				driver.find_element(By.XPATH, r'//*[@id="root"]/div/div/div[3]/div/div[2]/div/div[2]/button[2]').click()
+				driver.find_element(By.XPATH, r'//*[@id="root"]/div/div/div[3]/div/div[2]/div/div[2]/button[2]').send_keys(Keys.ENTER)
 		finally:
 			print("end: ", cnt-1) # check page
-			with open('result.json', 'w') as f:
+			with open('result.json', 'w', encoding='UTF-8') as f:
 				for person in res:
-					f.write(json.dumps(person, ensure_ascii=False) + '\n')
+					j_person = ast.literal_eval(person)
+					j_res.append(j_person)
+					f.write(json.dumps(j_person, ensure_ascii=False) + '\n')
 			driver.close()
 			driver = None
-			return json.dumps(res, ensure_ascii=False)
+			return json.dumps(j_res, ensure_ascii=False)
 		
 	return jsonify({'status': True, 'message': 'Already Initiated'})
-
-
-
-
-@app.route('/login', methods=['POST'])
-def login():
-    id = ''
-    pw = ''
-    '''
-    toreta website에서 login기능
-	id와 pw를 어떻게 안전하게 다룰 것인가? -> .env 파일 사용
-    '''
 
 def wait_page_ready(driver):
     WebDriverWait(driver, timeout=60).until(

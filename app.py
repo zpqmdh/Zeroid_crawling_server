@@ -40,13 +40,13 @@ def get_init():
 	global tabs
 	status = validateDriver();
 	if ( status['status'] is False ):
-		# chrome_options = webdriver.chromeOptions()
-		# chrome_options.add_argument('--headless')
-		# chrome_options.add_argument('--no-sandbox')
-		# chrome_options.add_argument("--single-process")
-		# chrome_options.add_argumnet("--disable-dev-shm-usage")
+		chrome_options = webdriver.chromeOptions()
+		chrome_options.add_argument('--headless')
+		chrome_options.add_argument('--no-sandbox')
+		chrome_options.add_argument("--single-process")
+		chrome_options.add_argument("--disable-dev-shm-usage")
 
-		driver = webdriver.Chrome(executable_path=r"chromedriver.exe")
+		 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options)
 		tabs = driver.window_handles
 
 		# open toreta website
